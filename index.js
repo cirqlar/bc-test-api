@@ -3,8 +3,10 @@ const app = require('express')();
 const cors = require('cors');
 const proxy = require('express-http-proxy');
 
+// Destructure env variables with sensible defaults
 const { PORT = 8000, CORS_HOSTS = "http://localhost:8080", API_KEY } = process.env;
 
+// Redirect to https in production
 app.use((req, res, next) => {
   if (process.env.NODE_ENV === 'production') {
     if (req.headers['x-forwarded-proto'] !== 'https')
@@ -15,6 +17,7 @@ app.use((req, res, next) => {
     return next();
 });
 
+// Only allow Cross Origin Requests from select hosts 
 const hosts = (CORS_HOSTS).split(', ');
 const corsOptions = {
   origin: function (origin, callback) {
@@ -29,8 +32,9 @@ const corsOptions = {
     return callback(null, true);
   },
 }
-
 app.use(cors(corsOptions));
+
+// Proxy requests to github api
 app.use('/graphql', proxy('https://api.github.com', {
   proxyReqPathResolver: function (req) {
     return '/graphql';
@@ -41,6 +45,5 @@ app.use('/graphql', proxy('https://api.github.com', {
     return proxyReqOpts;
   }
 }))
-
 
 app.listen(PORT, () => console.log(`Server Running on port ${PORT}`) );
